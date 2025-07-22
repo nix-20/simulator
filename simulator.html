@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulatore Economico Unico</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  body {
+    font-family: 'Poppins', sans-serif;
+    margin: 0; padding: 0;
+    background: linear-gradient(to right, #2cb67d, #7f5af0);
+    color: #fff;
+  }
+  header {
+    background: #16161a;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 0 15px #00000080;
+  }
+  header div {
+    font-weight: 700;
+  }
+  header button {
+    background: #6246ea;
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  header button:hover {
+    background: #4636c5;
+  }
+  main {
+    max-width: 900px;
+    margin: 20px auto;
+    background: #fffffe;
+    color: #000;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 20px #00000030;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .nav-buttons {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .nav-buttons button {
+    margin: 0 10px;
+    font-weight: 700;
+    background: #2cb67d;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .nav-buttons button:hover {
+    background: #249d68;
+  }
+  section {
+    display: none;
+  }
+  section.active {
+    display: block;
+  }
+  .item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding: 12px 0;
+  }
+  .item:last-child {
+    border-bottom: none;
+  }
+  .item span {
+    flex: 1;
+  }
+  .item button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  .buy-btn {
+    background: #2cb67d;
+    color: white;
+  }
+  .buy-btn:hover {
+    background: #249d68;
+  }
+  .sell-btn {
+    background: #d7263d;
+    color: white;
+  }
+  .sell-btn:hover {
+    background: #a81c2b;
+  }
+  .price-change {
+    min-width: 80px;
+    text-align: right;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span>Anno: <span id="anno">2025</span></span> |
+    <span>Soldi: €<span id="soldi">100000</span></span> |
+    <span>Guadagni totali: €<span id="guadagni">0</span></span>
+  </div>
+  <div>
+    <button id="annoBtn">+1 Anno</button>
+  </div>
+</header>
+
+<main>
+  <div class="nav-buttons">
+    <button id="btnMercato">Mercato</button>
+    <button id="btnInventario">Inventario</button>
+  </div>
+
+  <section id="mercato" class="active">
+    <h1>Mercato</h1>
+    <div id="listaMercato"></div>
+  </section>
+
+  <section id="inventario">
+    <h1>Inventario</h1>
+    <div id="listaInventario"></div>
+  </section>
+</main>
+
+<script>
+  // Stato iniziale o da localStorage
+  let stato = JSON.parse(localStorage.getItem("simulatore")) || {
+    anno: 2025,
+    soldi: 100000,
+    guadagniTotali: 0,
+    oggetti: [
+      { nome: "Casa", emoji: "🏠", storico: [150000] },
+      { nome: "Auto di lusso", emoji: "🚗", storico: [70000] },
+      { nome: "Bicicletta", emoji: "🚲", storico: [500] },
+      { nome: "Orologio", emoji: "⌚", storico: [2000] },
+      { nome: "Telefono", emoji: "📱", storico: [1200] },
+      { nome: "Laptop", emoji: "💻", storico: [1800] },
+      { nome: "Barca", emoji: "⛵", storico: [50000] },
+      { nome: "Giacca di pelle", emoji: "🧥", storico: [250] },
+      { nome: "Televisore", emoji: "📺", storico: [900] },
+      { nome: "Drone", emoji: "🛸", storico: [3000] },
+      // puoi aggiungere altri oggetti qui
+    ],
+    oggettiPosseduti: []
+  };
+
+  // Aggiorna soldi, anno e guadagni in header
+  function aggiornaHeader() {
+    document.getElementById("anno").textContent = stato.anno;
+    document.getElementById("soldi").textContent = stato.soldi.toLocaleString();
+    document.getElementById("guadagni").textContent = stato.guadagniTotali.toLocaleString();
+  }
+
+  // Calcola variazione % tra ultimi due prezzi di uno storico
+  function variazionePercentuale(storico) {
+    if (storico.length < 2) return 0;
+    const prec = storico[storico.length - 2];
+    const att = storico[storico.length - 1];
+    if (prec === 0) return 0;
+    return ((att - prec) / prec) * 100;
+  }
+
+  // Renderizza la lista del mercato (oggetti acquistabili)
+  function renderMercato() {
+    const lista = document.getElementById("listaMercato");
+    lista.innerHTML = "";
+    stato.oggetti.forEach((o, i) => {
+      const prezzo = o.storico[o.storico.length - 1];
+      const variazione = variazionePercentuale(o.storico);
+      const variazioneColor = variazione >= 0 ? "green" : "red";
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `
+        <span>${o.emoji} <strong>${o.nome}</strong></span>
+        <span>€${prezzo.toLocaleString()}</span>
+        <span class="price-change" style="color:${variazioneColor}">${variazione.toFixed(2)}%</span>
+        <button class="buy-btn" onclick="compra(${i})">Compra</button>
+      `;
+      lista.appendChild(item);
+    });
+  }
+
+  // Renderizza inventario (oggetti posseduti)
+  function renderInventario() {
+    const lista = document.getElementById("listaInventario");
+    lista.innerHTML = "";
+    if (stato.oggettiPosseduti.length === 0) {
+      lista.textContent = "Nessun oggetto posseduto.";
+      return;
+    }
+    stato.oggettiPosseduti.forEach(posseduto => {
+      const o = stato.oggetti[posseduto.index];
+      const prezzo = o.storico[o.storico.length - 1];
+      const variazione = variazionePercentuale(o.storico);
+      const variazioneColor = variazione >= 0 ? "green" : "red";
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `
+        <span>${o.emoji} <strong>${o.nome}</strong> - Quantità: ${posseduto.quantita}</span>
+        <span>€${prezzo.toLocaleString()}</span>
+        <span class="price-change" style="color:${variazioneColor}">${variazione.toFixed(2)}%</span>
+        <button class="sell-btn" onclick="vendi(${posseduto.index})">Vendi</button>
+      `;
+      lista.appendChild(item);
+    });
+  }
+
+  // Compra un oggetto
+  function compra(i) {
+    const o = stato.oggetti[i];
+    const prezzo = o.storico[o.storico.length - 1];
+    if (stato.soldi < prezzo) {
+      alert("Non hai abbastanza soldi per comprare questo oggetto!");
+      return;
+    }
+    stato.soldi -= prezzo;
+
+    // Cerca oggetto in inventario
+    const posseduto = stato.oggettiPosseduti.find(x => x.index === i);
+    if (posseduto) {
+      posseduto.quantita++;
+    } else {
+      stato.oggettiPosseduti.push({ index: i, quantita: 1 });
+    }
+    salvaStato();
+    aggiornaTutto();
+  }
+
+  // Vendi un oggetto
+  function vendi(i) {
+    const possedutoIndex = stato.oggettiPosseduti.findIndex(x => x.index === i);
+    if (possedutoIndex === -1) return;
+
+    const o = stato.oggetti[i];
+    const prezzo = o.storico[o.storico.length - 1];
+
+    // Incrementa soldi e guadagni totali
+    stato.soldi += prezzo;
+    stato.guadagniTotali += prezzo;
+
+    // Riduci quantità o rimuovi oggetto
+    if (stato.oggettiPosseduti[possedutoIndex].quantita > 1) {
+      stato.oggettiPosseduti[possedutoIndex].quantita--;
+    } else {
+      stato.oggettiPosseduti.splice(possedutoIndex, 1);
+    }
+    salvaStato();
+    aggiornaTutto();
+  }
+
+  // Avanza di un anno e aggiorna i prezzi
+  function avanzaAnno() {
+    stato.anno++;
+    stato.oggetti.forEach(o => {
+      const prec = o.storico[o.storico.length - 1];
+      // variazione plausibile: da -20% a +20%
+      const variazione = (Math.random() * 40 - 20);
+      let nuovoPrezzo = Math.max(1, Math.floor(prec * (1 + variazione / 100)));
+      o.storico.push(nuovoPrezzo);
+    });
+    salvaStato();
+    aggiornaTutto();
+  }
+
+  // Salva lo stato su localStorage
+  function salvaStato() {
+    localStorage.setItem("simulatore", JSON.stringify(stato));
+  }
+
+  // Aggiorna tutto (header, mercato, inventario)
+  function aggiornaTutto() {
+    aggiornaHeader();
+    if (document.getElementById("mercato").classList.contains("active")) {
+      renderMercato();
+    } else {
+      renderInventario();
+    }
+  }
+
+  // Gestione switch tra merc. e inventario
+  document.getElementById("btnMercato").addEventListener("click", () => {
+    document.getElementById("mercato").classList.add("active");
+    document.getElementById("inventario").classList.remove("active");
+    renderMercato();
+  });
+  document.getElementById("btnInventario").addEventListener("click", () => {
+    document.getElementById("inventario").classList.add("active");
+    document.getElementById("mercato").classList.remove("active");
+    renderInventario();
+  });
+
+  // Pulsante avanza anno
+  document.getElementById("annoBtn").addEventListener("click", avanzaAnno);
+
+  // Inizializzazione display
+  aggiornaTutto();
+
+  // Esponi funzioni globali per pulsanti inline
+  window.compra = compra;
+  window.vendi = vendi;
+</script>
+
+</body>
+</html>
