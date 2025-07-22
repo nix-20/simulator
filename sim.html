@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulatore Economico</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #7f5af0, #2cb67d);
+      margin: 0;
+      padding: 0;
+      color: #fff;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      padding: 30px;
+    }
+    h1, h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px #00000050;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #16161a;
+      padding: 15px 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00000030;
+    }
+    .topbar button {
+      background: #2cb67d;
+      border: none;
+      color: white;
+      font-weight: bold;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .topbar button:hover {
+      background: #24a06d;
+    }
+    .section {
+      background: #fffffe;
+      color: #000;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 0 12px #00000020;
+    }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #ccc;
+    }
+    .item:last-child {
+      border-bottom: none;
+    }
+    .item span {
+      margin-right: 10px;
+    }
+    .item button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .buy-btn {
+      background: #6246ea;
+      color: white;
+    }
+    .buy-btn:hover {
+      background: #4636c5;
+    }
+    .sell-btn {
+      background: #ef4565;
+      color: white;
+    }
+    .sell-btn:hover {
+      background: #c2324d;
+    }
+    .scroll-button {
+      background: #fffffe;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 0 8px #00000030;
+    }
+    .scroll-button:hover {
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simulatore Economico</h1>
+    <div class="topbar">
+      <div>
+        <strong>Anno:</strong> <span id="anno">2025</span> |
+        <strong>Soldi:</strong> €<span id="soldi">100000</span>
+      </div>
+      <div>
+        <button onclick="avanzaAnno()">+1 Anno</button>
+        <button class="scroll-button" onclick="document.getElementById('inventario').scrollIntoView({ behavior: 'smooth' });">Vai all'inventario</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Mercato</h2>
+      <div id="mercato"></div>
+    </div>
+
+    <div class="section" id="inventario">
+      <h2>Inventario</h2>
+      <div id="listaInventario"></div>
+    </div>
+  </div>
+
+  <script>
+    let stato = JSON.parse(localStorage.getItem("stato")) || {
+      anno: 2025,
+      soldi: 100000,
+      oggettiPosseduti: [],
+      oggetti: generaOggetti()
+    };
+
+    function generaOggetti() {
+      const lista = [
+        ["🏠", "Appartamento a Milano", 350000], ["🚗", "Fiat Panda", 12000], ["🏎️", "Lamborghini Aventador", 400000],
+        ["💻", "MacBook Pro", 2500], ["📱", "iPhone 15", 1350], ["⌚", "Apple Watch", 450], ["🚁", "Elicottero", 980000],
+        ["✈️", "Jet Privato", 5200000], ["🚤", "Moto d'acqua", 12000], ["🛥️", "Yacht", 80000],
+        ["🧳", "Valigia LV", 3500], ["👟", "Nike Air Jordan", 200], ["🕹️", "PC Gaming", 2000], ["📺", "TV OLED", 1600],
+        ["🎮", "PlayStation 5", 550], ["🎧", "AirPods Max", 600], ["🏡", "Villa in Toscana", 450000],
+        ["🏢", "Loft a New York", 1200000], ["🏗️", "Terreno Edificabile", 250000], ["🌾", "Terreno Agricolo", 60000],
+        ["🛏️", "Letto Matrimoniale", 700], ["🪑", "Sedia Gaming", 350], ["🧥", "Giacca Canada Goose", 1100],
+        ["📷", "Canon R5", 3200], ["📚", "Enciclopedia", 950], ["💊", "Cocaina", 35000], ["🧪", "MDMA", 7000],
+        ["🔫", "Pistola Glock", 900], ["🧠", "Cervello in Barattolo", 9999], ["💼", "Borsa Prada", 2900],
+        ["🛸", "Modello UFO", 999999], ["🧸", "Peluche Raro", 850], ["📀", "CD Autografato", 150],
+        ["🪙", "Moneta d’oro", 1800], ["🧬", "DNA sintetico", 50000], ["🛶", "Canoa in carbonio", 3000],
+        ["🗿", "Scultura in marmo", 120000], ["📖", "Libro raro", 2000], ["🔮", "Sfera magica", 999],
+        ["🪦", "Tomba VIP", 25000], ["🧯", "Attrezzi incendio", 800], ["📡", "Antenna", 2100],
+        ["🛰️", "Micro satellite", 180000], ["📡", "Router Starlink", 600], ["🔭", "Telescopio", 9000],
+        ["💍", "Anello diamante", 5000], ["🔪", "Coltello militare", 350], ["🛴", "Monopattino", 800],
+        ["🏘️", "Condominio Berlino", 750000], ["🚕", "Toyota Prius", 21000], ["🛻", "Pickup Raptor", 58000],
+        ["🚐", "Van Volkswagen", 25000], ["📦", "Pacco misterioso", 1000], ["🧰", "Set attrezzi", 650],
+        ["🔌", "Generatore", 1200], ["🪜", "Scala telescopica", 350], ["📖", "Libro Magico", 888],
+        ["🦴", "Scheletro finto", 650], ["💣", "Bomba finta", 150], ["🧿", "Amuleto", 70],
+        ["🔭", "Telescopio Pro", 10000], ["📡", "Radar Portatile", 1750], ["🎩", "Cappello Vintage", 430],
+        ["🧃", "Succo Raro", 9], ["🧪", "Pozione Magica", 399], ["🪓", "Ascia Vichinga", 1800],
+        ["🪙", "Bitcoin Fisico", 26000], ["📕", "Diario Segreto", 250], ["🧸", "Teddy Bear Edizione Limitata", 990]
+      ];
+      return lista.map(([emoji, nome, prezzo]) => ({
+        emoji,
+        nome,
+        storico: [prezzo]
+      }));
+    }
+
+    function aggiornaPrezzi() {
+      for (let o of stato.oggetti) {
+        const prec = o.storico[o.storico.length - 1];
+        const delta = (Math.random() * 10 - 5) ** 2 * (Math.random() < 0.5 ? -1 : 1);
+        const nuovo = Math.max(1, Math.floor(prec * (1 + delta / 100)));
+        o.storico.push(nuovo);
+      }
+    }
+
+    function avanzaAnno() {
+      stato.anno++;
+      aggiornaPrezzi();
+      salva();
+      render();
+    }
+
+    function compra(index) {
+      const prezzo = stato.oggetti[index].storico.at(-1);
+      if (stato.soldi >= prezzo) {
+        stato.soldi -= prezzo;
+        stato.oggettiPosseduti.push({ ...stato.oggetti[index] });
+        salva();
+        render();
+      } else {
+        alert("Non hai abbastanza soldi.");
+      }
+    }
+
+    function vendi(index) {
+      const prezzo = stato.oggettiPosseduti[index].storico.at(-1);
+      stato.soldi += prezzo;
+      stato.oggettiPosseduti.splice(index, 1);
+      salva();
+      render();
+    }
+
+    function salva() {
+      localStorage.setItem("stato", JSON.stringify(stato));
+    }
+
+    function render() {
+      document.getElementById("anno").textContent = stato.anno;
+      document.getElementById("soldi").textContent = stato.soldi.toLocaleString();
+
+      const m = document.getElementById("mercato");
+      m.innerHTML = "";
+      stato.oggetti.forEach((o, i) => {
+        const prezzo = o.storico.at(-1);
+        const prec = o.storico.at(-2) || prezzo;
+        const delta = (((prezzo - prec) / prec) * 100).toFixed(2);
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `
+          <span>${o.emoji} ${o.nome}</span>
+          <span>€${prezzo.toLocaleString()} (<span style="color:${delta>=0?'green':'red'}">${delta}%</span>)</span>
+          <button class="buy-btn" onclick="compra(${i})">Compra</button>`;
+        m.appendChild(item);
+      });
+
+      const inv = document.getElementById("listaInventario");
+      inv.innerHTML = "";
+      stato.oggettiPosseduti.forEach((o, index) => {
+        const prezzo = o.storico.at(-1);
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `
+          <span>${o.emoji} ${o.nome}</span>
+          <span>Valore: €${prezzo.toLocaleString()}</span>
+          <button class="sell-btn" onclick="vendi(${index})">Vendi</button>`;
+        inv.appendChild(item);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
