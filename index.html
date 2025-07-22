@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulatore Economia</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+    .container { max-width: 960px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #ccc; }
+    .item span { margin-right: 10px; }
+    button { padding: 5px 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simulatore Economico</h1>
+    <div class="topbar">
+      <div><strong>Anno:</strong> <span id="anno">2025</span></div>
+      <div><strong>Soldi:</strong> €<span id="soldi">100000</span></div>
+      <button onclick="avanzaAnno()">+1 Anno</button>
+    </div>
+
+    <h2>Mercato</h2>
+    <div id="mercato"></div>
+
+    <h2>Inventario</h2>
+    <div id="inventario"></div>
+  </div>
+
+  <script>
+    let stato = JSON.parse(localStorage.getItem("stato")) || {
+      anno: 2025,
+      soldi: 100000,
+      oggettiPosseduti: [],
+      oggetti: generaOggetti()
+    };
+
+    function generaOggetti() {
+      const lista = [
+        ["🏠", "Appartamento a Milano", 350000], ["🏢", "Loft a New York", 1200000], ["🏚️", "Casa abbandonata", 20000],
+        ["🏡", "Villetta in Toscana", 450000], ["🏘️", "Condominio a Berlino", 750000], ["🏤", "Edificio commerciale", 1500000],
+        ["🏗️", "Terreno edificabile", 250000], ["🌾", "Terreno agricolo", 60000], ["🚗", "Fiat Panda", 12000],
+        ["🚙", "Dacia Duster", 17000], ["🏎️", "Lamborghini Aventador", 400000], ["🚕", "Toyota Prius", 21000],
+        ["🚓", "BMW Serie 3", 38000], ["🚑", "Mercedes Classe S", 105000], ["🛻", "Pickup Ford Raptor", 58000],
+        ["🚐", "Van Volkswagen", 25000], ["🛵", "Piaggio Vespa", 3200], ["🏍️", "Harley Davidson", 22000],
+        ["🛴", "Monopattino elettrico", 800], ["📱", "iPhone 15 Pro", 1350], ["💻", "MacBook Pro M3", 2500],
+        ["⌚", "Apple Watch", 450], ["📺", "TV OLED LG", 1600], ["📷", "Canon EOS R5", 3200],
+        ["🎮", "PlayStation 5", 550], ["🕹️", "PC gaming RTX", 2000], ["🎧", "AirPods Max", 600],
+        ["🛏️", "Letto matrimoniale", 700], ["🪑", "Sedia da gaming", 350], ["🧼", "Set bagno lusso", 280],
+        ["🧥", "Giacca Canada Goose", 1100], ["👟", "Nike Air Jordan", 200], ["👔", "Abito su misura", 1300],
+        ["🧳", "Valigia Louis Vuitton", 3500], ["💼", "Borsa Prada", 2900], ["💍", "Anello diamante", 5000],
+        ["🖼️", "Quadro d'arte", 95000], ["🗿", "Scultura in marmo", 120000], ["💊", "Cocaina (1kg)", 35000],
+        ["🧪", "MDMA (100g)", 7000], ["🚬", "Sigarette (1 pallet)", 3000], ["📦", "Pacco misterioso", 1000],
+        ["🔫", "Pistola Glock", 900], ["🔪", "Coltello militare", 350], ["⚔️", "Katana giapponese", 1500],
+        ["🧯", "Attrezzatura antincendio", 800], ["🧰", "Set attrezzi pro", 650], ["🔌", "Generatore diesel", 1200],
+        ["🪜", "Scala telescopica", 350], ["📡", "Antenna satellitare", 2100], ["🛰️", "Micro satellite", 180000],
+        ["📡", "Router Starlink", 600], ["🔭", "Telescopio professionale", 9000], ["📚", "Enciclopedia storica", 950],
+        ["📖", "Libro raro", 2000], ["🧠", "Cervello in barattolo", 9999], ["🧸", "Peluche raro", 850],
+        ["🪙", "Moneta d’oro", 1800], ["🧬", "DNA sintetico", 50000], ["🛥️", "Yacht piccolo", 80000],
+        ["🚤", "Moto d’acqua", 12000], ["🛶", "Canoa in carbonio", 3000], ["🚁", "Elicottero privato", 980000],
+        ["✈️", "Jet privato", 5200000], ["🚀", "Viaggio suborbitale", 350000], ["🛸", "Modello UFO", 999999],
+        ["💣", "Bomba finta", 150], ["🦴", "Scheletro umano finto", 650], ["🪦", "Tomba VIP", 25000],
+        ["🔮", "Sfera magica", 999], ["📀", "CD autografato", 150], ["🧿", "Amuleto protettivo", 70]
+      ];
+      return lista.map(([emoji, nome, prezzo]) => ({
+        emoji,
+        nome,
+        storico: [prezzo]
+      }));
+    }
+
+    function aggiornaPrezzi() {
+      for (let o of stato.oggetti) {
+        const prec = o.storico[o.storico.length - 1];
+        const delta = (Math.random() * 10 - 5) ** 2 * (Math.random() < 0.5 ? -1 : 1);
+        const nuovo = Math.max(1, Math.floor(prec * (1 + delta / 100)));
+        o.storico.push(nuovo);
+      }
+    }
+
+    function avanzaAnno() {
+      stato.anno++;
+      aggiornaPrezzi();
+      salva();
+      render();
+    }
+
+    function compra(index) {
+      const prezzo = stato.oggetti[index].storico.at(-1);
+      if (stato.soldi >= prezzo) {
+        stato.soldi -= prezzo;
+        stato.oggettiPosseduti.push({ ...stato.oggetti[index] });
+        salva();
+        render();
+      } else {
+        alert("Non hai abbastanza soldi.");
+      }
+    }
+
+    function salva() {
+      localStorage.setItem("stato", JSON.stringify(stato));
+    }
+
+    function render() {
+      document.getElementById("anno").textContent = stato.anno;
+      document.getElementById("soldi").textContent = stato.soldi.toLocaleString();
+
+      const m = document.getElementById("mercato");
+      m.innerHTML = "";
+      stato.oggetti.forEach((o, i) => {
+        const prezzo = o.storico.at(-1);
+        const prec = o.storico.at(-2) || prezzo;
+        const delta = (((prezzo - prec) / prec) * 100).toFixed(2);
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `
+          <span>${o.emoji} ${o.nome}</span>
+          <span>€${prezzo.toLocaleString()} (<span style="color:${delta>=0?'green':'red'}">${delta}%</span>) 
+          <button onclick="compra(${i})">Compra</button></span>`;
+        m.appendChild(item);
+      });
+
+      const inv = document.getElementById("inventario");
+      inv.innerHTML = "";
+      stato.oggettiPosseduti.forEach(o => {
+        const prezzo = o.storico.at(-1);
+        const item = document.createElement("div");
+        item.className = "item";
+        item.innerHTML = `<span>${o.emoji} ${o.nome}</span><span>Valore attuale: €${prezzo.toLocaleString()}</span>`;
+        inv.appendChild(item);
+      });
+    }
+
+    render();
+  </script>
+</body>
+</html>
