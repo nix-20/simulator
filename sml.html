@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Simulatore Economia - Compra e Vendi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron&family=Montserrat:wght@400;700&display=swap');
+  body {
+    margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; background: linear-gradient(135deg,#141e30,#243b55); color: #f0f0f0;
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+  }
+  header {
+    background: #1f2937; width: 100%; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 0 10px #0f172a;
+  }
+  header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin: 0;
+    letter-spacing: 1.5px;
+    color: #00f7ff;
+  }
+  button {
+    background: #00f7ff; border: none; color: #0f172a; font-weight: 700; padding: 10px 20px; cursor: pointer;
+    font-family: 'Montserrat', sans-serif; border-radius: 8px; box-shadow: 0 0 12px #00f7ffaa;
+    transition: background 0.3s ease;
+  }
+  button:hover {
+    background: #00b9cc;
+  }
+  main {
+    flex: 1; max-width: 1100px; width: 100%; padding: 20px;
+  }
+  .lista-oggetti {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+    gap: 15px;
+  }
+  .oggetto-card {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 0 12px #00f7ff77;
+    display: flex; flex-direction: column; justify-content: space-between;
+    color: #cceeff;
+  }
+  .oggetto-emoji {
+    font-size: 2.4rem;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .oggetto-nome {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .oggetto-prezzo {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .variazione {
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    font-size: 1rem;
+  }
+  .variazione.positivo {
+    color: #4ade80; /* verde */
+  }
+  .variazione.negativo {
+    color: #f87171; /* rosso */
+  }
+  .btn-compra {
+    background: #22c55e;
+    color: #0f172a;
+  }
+  .btn-compra:hover {
+    background: #16a34a;
+  }
+  .btn-vendi {
+    background: #ef4444;
+    color: #fff;
+    margin-top: 10px;
+  }
+  .btn-vendi:hover {
+    background: #b91c1c;
+  }
+  .status-bar {
+    margin-bottom: 20px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  .navigazione {
+    margin-bottom: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+  .hidden {
+    display: none;
+  }
+  /* INVENTARIO */
+  .inventario-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .inventario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+  .inventario-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    color: #00f7ff;
+    font-size: 1.8rem;
+  }
+  .inventario-lista {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+    gap: 15px;
+  }
+  .inventario-item {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 0 12px #00f7ff77;
+    color: #cceeff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .inventario-item .nome {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .inventario-item .quantita {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .inventario-item .prezzo-attuale {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .inventario-item .variazione {
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1rem;
+  }
+  .grafico-candela {
+    width: 100%;
+    height: 80px;
+    background: #0f172a;
+    border-radius: 6px;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Simulatore Economico</h1>
+  <button id="btn-inventario">Inventario</button>
+</header>
+
+<main id="main-principale">
+  <div class="status-bar" id="status-bar">
+    Anno: <span id="anno">2025</span> | Soldi: €<span id="soldi">100000</span>
+  </div>
+  <div class="lista-oggetti" id="lista-oggetti"></div>
+  <div style="text-align:center; margin-top: 25px;">
+    <button id="btn-avanza">Avanti 1 anno</button>
+  </div>
+</main>
+
+<main id="main-inventario" class="hidden">
+  <div class="inventario-container">
+    <div class="inventario-header">
+      <h2>Inventario</h2>
+      <button id="btn-torna">Torna alla pagina principale</button>
+    </div>
+    <div class="status-bar" id="status-inventario">
+      Anno: <span id="anno-inv">2025</span> | Soldi: €<span id="soldi-inv">100000</span>
+    </div>
+    <div class="inventario-lista" id="lista-inventario"></div>
+    <div style="text-align:center; margin-top: 25px;">
+      <button id="btn-avanza-inv">Avanti 1 anno</button>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(() => {
+  // Dati iniziali
+  const oggetti = [
+    { nome: "Casa", emoji: "🏠", storico: [150000] },
+    { nome: "Appartamento", emoji: "🏢", storico: [120000] },
+    { nome: "Villa", emoji: "🏡", storico: [350000] },
+    { nome: "Garage", emoji: "🚗", storico: [25000] },
+    { nome: "Auto di lusso", emoji: "🚘", storico: [80000] },
+    { nome: "Auto economica", emoji: "🚙", storico: [15000] },
+    { nome: "Moto", emoji: "🏍️", storico: [12000] },
+    { nome: "Bicicletta", emoji: "🚲", storico: [500] },
+    { nome: "Barca", emoji: "⛵", storico: [45000] },
+    { nome: "Jet privato", emoji: "🛩️", storico: [2000000] },
+    { nome: "Orologio di lusso", emoji: "⌚", storico: [25000] },
+    { nome: "Smartphone", emoji: "📱", storico: [900] },
+    { nome: "Laptop", emoji: "💻", storico: [1500] },
+    { nome: "Televisore", emoji: "📺", storico: [1200] },
+    { nome: "Drone", emoji: "🛸", storico: [2000] },
+    { nome: "Fotocamera", emoji: "📷", storico: [1300] },
+    { nome: "Chitarra", emoji: "🎸", storico: [800] },
+    { nome: "Pianoforte", emoji: "🎹", storico: [5000] },
+    { nome: "Borsa di marca", emoji: "👜", storico: [1200] },
+    { nome: "Giacca di pelle", emoji: "🧥", storico: [300] },
+    { nome: "Profumo", emoji: "🧴", storico: [80] },
+    { nome: "Bicchiere di whisky", emoji: "🥃", storico: [50] },
+    { nome: "Bottiglia di vino", emoji: "🍷", storico: [30] },
+    { nome: "Libro raro", emoji: "📚", storico: [500] },
+    { nome: "Quadro d’arte", emoji: "🖼️", storico: [15000] },
+    { nome: "Gioielli", emoji: "💍", storico: [20000] },
+    { nome: "Diamante", emoji: "💎", storico: [80000] },
+    { nome: "Cavallo", emoji: "🐎", storico: [10000] },
+    { nome: "Cane da razza", emoji: "🐕", storico: [2000] },
+    { nome: "Collezione di monete", emoji: "🪙", storico: [4000] },
+    { nome: "Collezione di francobolli", emoji: "✉️", storico: [2500] },
+    { nome: "Bicicletta da corsa", emoji: "🚴‍♂️", storico: [1500] },
+    { nome: "Auto d’epoca", emoji: "🚘", storico: [40000] },
+    { nome: "Scarpe firmate", emoji: "👟", storico: [400] },
+    { nome: "Set di coltelli da cucina", emoji: "🔪", storico: [300] },
+    { nome: "Telecomando universale", emoji: "📺", storico: [50] },
+    { nome: "Smartwatch", emoji: "⌚", storico: [400] },
+    { nome: "Tablet", emoji: "📱", storico: [600] },
+    { nome: "Cuffie Bluetooth", emoji: "🎧", storico: [150] },
+    { nome: "Videogioco", emoji: "🎮", storico: [70] },
+    { nome: "DVD", emoji: "📀", storico: [15] },
+    { nome: "Speaker Bluetooth", emoji: "🔊", storico: [120] },
+    { nome: "Auto elettrica", emoji: "🚗", storico: [35000] },
+    { nome: "Carburante", emoji: "⛽", storico: [1.5] },
+    { nome: "Sigarette", emoji: "🚬", storico: [5] },
+    { nome: "Droga leggera", emoji: "🍁", storico: [100] },
+    { nome: "Droga pesante", emoji: "☠️", storico: [2000] },
+    { nome: "Fucile", emoji: "🔫", storico: [1500] },
+    { nome: "Pistola", emoji: "🔫", storico: [700] },
+    { nome: "Coltello", emoji: "🔪", storico: [100] },
+    { nome: "Granata", emoji: "💣", storico: [10000] },
+    { nome: "Arco", emoji: "🏹", storico: [350] },
+    { nome: "Freccia", emoji: "🏹", storico: [20] },
+    { nome: "Computer da gaming", emoji: "🖥️", storico: [2500] },
+    { nome: "Scheda grafica", emoji: "💻", storico: [600] },
+    { nome: "Processore", emoji: "💻", storico: [350] },
+    { nome: "Memoria RAM", emoji: "💾", storico: [150] },
+    { nome: "Hard Disk", emoji: "💽", storico: [100] },
+    { nome: "SSD", emoji: "💽", storico: [200] },
+    { nome: "Router WiFi", emoji: "📡", storico: [80] },
+    { nome: "Smart Home Hub", emoji: "🏠", storico: [300] },
+    { nome: "TV OLED", emoji: "📺", storico: [2200] },
+    { nome: "Console", emoji: "🎮", storico: [400] },
+    { nome: "Film BluRay", emoji: "📀", storico: [25] },
+    { nome: "Macchina fotografica reflex", emoji: "📷", storico: [1200] },
+    { nome: "Drone da corsa", emoji: "🛸", storico: [1500] },
+    { nome: "Microfono", emoji: "🎤", storico: [130] },
+    { nome: "Mixer audio", emoji: "🎛️", storico: [800] },
+    { nome: "Amplificatore", emoji: "🎚️", storico: [700] },
+    { nome: "Chitarra elettrica", emoji: "🎸", storico: [900] },
+    { nome: "Amplificatore chitarra", emoji: "🎚️", storico: [500] },
+    { nome: "Pianoforte digitale", emoji: "🎹", storico: [4500] },
+    { nome: "Disco vinile", emoji: "🎵", storico: [40] },
+    { nome: "Casco da moto", emoji: "🪖", storico: [100] },
+    { nome: "Sedia da ufficio", emoji: "💺", storico: [120] },
+    { nome: "Scrivania", emoji: "🪑", storico: [300] },
+    { nome: "Lampada da tavolo", emoji: "💡", storico: [60] },
+    { nome: "Piantina da interno", emoji: "🌿", storico: [30] },
+  ];
+
+  // Stato simulazione
+  let stato = {
+    anno: 2025,
+    soldi: 100000,
+    prezzi: [],      // Prezzi correnti per oggetto (indici come in oggetti)
+    inventario: [],  // Quantità posseduta di ogni oggetto
+    storicoPrezzi: [] // Array di array per storici prezzi per ogni oggetto (per grafico)
+  };
+
+  // Carica dati da localStorage
+  function caricaStato() {
+    const dati = localStorage.getItem('simulatoreEconomico');
+    if (dati) {
+      try {
+        const parsed = JSON.parse(dati);
+        if (parsed.anno && parsed.soldi !== undefined && Array.isArray(parsed.prezzi) && Array.isArray(parsed.inventario) && Array.isArray(parsed.storicoPrezzi)) {
+          stato = parsed;
+          return;
+        }
+      } catch {}
+    }
+    // Se no dati o errati, inizializza
+    stato.anno = 2025;
+    stato.soldi = 100000;
+    stato.prezzi = oggetti.map(o => o.storico[0]);
+    stato.inventario = oggetti.map(() => 0);
+    stato.storicoPrezzi = oggetti.map(o => [o.storico[0]]);
+  }
+
+  // Salva stato su localStorage
+  function salvaStato() {
+    localStorage.setItem('simulatoreEconomico', JSON.stringify(stato));
+  }
+
+  // Calcola variazione prezzo annuale casuale -100% +100%
+  // Variazione massima non può far scendere prezzo <1€
+  function variaPrezzi() {
+    stato.prezzi = stato.prezzi.map((prezzo, i) => {
+      // variazione random percentuale tra -100% e +100%
+      let variazionePercent = (Math.random() * 2 - 1) * 100;
+      let nuovoPrezzo = prezzo * (1 + variazionePercent / 100);
+      if (nuovoPrezzo < 1) nuovoPrezzo = 1; // prezzo minimo 1 euro
+      nuovoPrezzo = Math.round(nuovoPrezzo);
+      // Aggiorna storico prezzi
+      stato.storicoPrezzi[i].push(nuovoPrezzo);
+      return nuovoPrezzo;
+    });
+  }
+
+  // Render pagina principale
+  const listaContainer = document.getElementById('lista-oggetti');
+  const annoSpan = document.getElementById('anno');
+  const soldiSpan = document.getElementById('soldi');
+
+  // Render pagina inventario
+  const mainPrincipale = document.getElementById('main-principale');
+  const mainInventario = document.getElementById('main-inventario');
+  const listaInventario = document.getElementById('lista-inventario');
+  const annoInvSpan = document.getElementById('anno-inv');
+  const soldiInvSpan = document.getElementById('soldi-inv');
+
+  // Cambia pagina
+  const btnInventario = document.getElementById('btn-inventario');
+  const btnTorna = document.getElementById('btn-torna');
+
+  // Pulsanti avanzamento anno
+  const btnAvanza = document.getElementById('btn-avanza');
+  const btnAvanzaInv = document.getElementById('btn-avanza-inv');
+
+  // Funzione helper per colore variazione
+  function classeVariazione(val) {
+    return val > 0 ? 'positivo' : val < 0 ? 'negativo' : '';
+  }
+
+  // Renderizza oggetti nella pagina principale
+  function renderizzaOggetti() {
+    listaContainer.innerHTML = '';
+    stato.prezzi.forEach((prezzo, i) => {
+      const prezzoPrec = stato.storicoPrezzi[i].length > 1 ? stato.storicoPrezzi[i][stato.storicoPrezzi[i].length - 2] : prezzo;
+      const variazione = prezzoPrec === 0 ? 0 : Math.round(((prezzo - prezzoPrec) / prezzoPrec) * 100);
+      const card = document.createElement('div');
+      card.className = 'oggetto-card';
+      card.innerHTML = `
+        <div class="oggetto-emoji">${oggetti[i].emoji}</div>
+        <div class="oggetto-nome">${oggetti[i].nome}</div>
+        <div class="oggetto-prezzo">Prezzo: €${prezzo.toLocaleString('it-IT')}</div>
+        <div class="variazione ${classeVariazione(variazione)}">${variazione >= 0 ? '+' : ''}${variazione}%</div>
+        <button class="btn-compra" data-id="${i}">Compra</button>
+      `;
+      listaContainer.appendChild(card);
+    });
+    annoSpan.textContent = stato.anno;
+    soldiSpan.textContent = stato.soldi.toLocaleString('it-IT');
+  }
+
+  // Render inventario
+  function renderizzaInventario() {
+    listaInventario.innerHTML = '';
+    annoInvSpan.textContent = stato.anno;
+    soldiInvSpan.textContent = stato.soldi.toLocaleString('it-IT');
+    stato.inventario.forEach((quantita, i) => {
+      if (quantita > 0) {
+        const prezzoAttuale = stato.prezzi[i];
+        const storico = stato.storicoPrezzi[i];
+        const prezzoPrec = storico.length > 1 ? storico[storico.length - 2] : prezzoAttuale;
+        const variazione = prezzoPrec === 0 ? 0 : Math.round(((prezzoAttuale - prezzoPrec) / prezzoPrec) * 100);
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'inventario-item';
+        itemDiv.innerHTML = `
+          <div class="nome">${oggetti[i].emoji} ${oggetti[i].nome}</div>
+          <div class="quantita">Quantità: ${quantita}</div>
+          <div class="prezzo-attuale">Prezzo attuale: €${prezzoAttuale.toLocaleString('it-IT')}</div>
+          <div class="variazione ${classeVariazione(variazione)}">${variazione >= 0 ? '+' : ''}${variazione}%</div>
+          <button class="btn-vendi" data-id="${i}">Vendi 1</button>
+          <canvas id="grafico-${i}" class="grafico-candela"></canvas>
+        `;
+        listaInventario.appendChild(itemDiv);
+        disegnaGraficoCandela(`grafico-${i}`, storico);
+      }
+    });
+  }
+
+  // Compra oggetto
+  function compra(id) {
+    const prezzo = stato.prezzi[id];
+    if (stato.soldi >= prezzo) {
+      stato.soldi -= prezzo;
+      stato.inventario[id]++;
+      salvaStato();
+      renderizzaOggetti();
+      renderizzaInventario();
+    } else {
+      alert("Soldi insufficienti per comprare questo oggetto.");
+    }
+  }
+
+  // Vendi oggetto (1 unità)
+  function vendi(id) {
+    if (stato.inventario[id] > 0) {
+      stato.inventario[id]--;
+      stato.soldi += stato.prezzi[id];
+      salvaStato();
+      renderizzaOggetti();
+      renderizzaInventario();
+    }
+  }
+
+  // Avanza un anno
+  function avanzaAnno() {
+    stato.anno++;
+    variaPrezzi();
+    salvaStato();
+    renderizzaOggetti();
+    renderizzaInventario();
+  }
+
+  // Cambia pagina
+  btnInventario.addEventListener('click', () => {
+    mainPrincipale.classList.add('hidden');
+    mainInventario.classList.remove('hidden');
+    renderizzaInventario();
+  });
+  btnTorna.addEventListener('click', () => {
+    mainInventario.classList.add('hidden');
+    mainPrincipale.classList.remove('hidden');
+    renderizzaOggetti();
+  });
+
+  // Eventi compra e vendi
+  listaContainer.addEventListener('click', e => {
+    if (e.target.classList.contains('btn-compra')) {
+      const id = +e.target.getAttribute('data-id');
+      compra(id);
+    }
+  });
+  listaInventario.addEventListener('click', e => {
+    if (e.target.classList.contains('btn-vendi')) {
+      const id = +e.target.getAttribute('data-id');
+      vendi(id);
+    }
+  });
+
+  // Avanza anno
+  btnAvanza.addEventListener('click', avanzaAnno);
+  btnAvanzaInv.addEventListener('click', () => {
+    avanzaAnno();
+    renderizzaInventario();
+  });
+
+  // Disegna grafico a candela per storico prezzi
+  function disegnaGraficoCandela(idCanvas, storico) {
+    // Usa Chart.js per candlestick
+    // Chart.js base non ha candlestick, ma si può simulare con bar chart
+    // Qui disegniamo semplicemente le variazioni con barre colorate
+
+    const ctx = document.getElementById(idCanvas).getContext('2d');
+    // Se grafico già esiste, distruggilo
+    if (ctx.chart) {
+      ctx.chart.destroy();
+    }
+    const labels = storico.map((_, i) => stato.anno - (storico.length - 1) + i);
+    const data = {
+      labels: labels,
+      datasets: [{
+        label: 'Prezzo',
+        data: storico,
+        backgroundColor: storico.map((val, i) => {
+          if (i === 0) return '#666';
+          return val >= storico[i - 1] ? '#4ade80' : '#f87171';
+        }),
+        borderWidth: 1
+      }]
+    };
+    ctx.chart = new Chart(ctx, {
+      type: 'bar',
+      data: data,
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: '#cceeff' }
+          },
+          x: {
+            ticks: { color: '#cceeff' }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+
+  // Inizializza tutto
+  caricaStato();
+  renderizzaOggetti();
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulatore Economico</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #121212;
+      color: #cceeff;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #1e40af;
+      padding: 15px;
+      font-size: 1.5rem;
+      text-align: center;
+      color: white;
+    }
+    main {
+      padding: 10px;
+      max-width: 900px;
+      margin: auto;
+    }
+    .oggetto-card, .inventario-item {
+      background: #1f2937;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .oggetto-emoji {
+      font-size: 2rem;
+      width: 50px;
+      text-align: center;
+    }
+    .oggetto-nome {
+      flex-grow: 1;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .oggetto-prezzo, .prezzo-attuale {
+      font-size: 1rem;
+      min-width: 120px;
+    }
+    .variazione {
+      min-width: 60px;
+      font-weight: 700;
+      text-align: right;
+      font-size: 1rem;
+    }
+    .variazione.positivo {
+      color: #4ade80;
+    }
+    .variazione.negativo {
+      color: #f87171;
+    }
+    button {
+      background: #3b82f6;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s ease;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    .hidden {
+      display: none;
+    }
+    #btn-inventario, #btn-torna {
+      margin: 10px 5px;
+    }
+    canvas.grafico-candela {
+      width: 120px;
+      height: 50px;
+    }
+  </style>
+</head>
+<body>
+  <header>Simulatore Economico</header>
+  <main>
+    <section id="main-principale">
+      <div>
+        Anno: <span id="anno"></span> - Soldi: €<span id="soldi"></span>
+      </div>
+      <button id="btn-inventario">Vai all'inventario</button>
+      <button id="btn-avanza">Avanza di un anno</button>
+      <div id="lista-oggetti"></div>
+    </section>
+
+    <section id="main-inventario" class="hidden">
+      <div>
+        Anno: <span id="anno-inv"></span> - Soldi: €<span id="soldi-inv"></span>
+      </div>
+      <button id="btn-torna">Torna alla lista</button>
+      <button id="btn-avanza-inv">Avanza di un anno</button>
+      <div id="lista-inventario"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // Inserisci qui tutto il codice JavaScript che ti ho fornito sopra
+  </script>
+</body>
+</html>
